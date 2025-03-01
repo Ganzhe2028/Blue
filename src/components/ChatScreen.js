@@ -4,7 +4,10 @@ import Message from "./Message";
 import StageSummary from "./StageSummary";
 import { scenarios } from "../utils/scenarios";
 import { analyzeResponse } from "../utils/analyzer";
-import treeImage from "./11.jpg"; // 导入树图片
+import tree11 from "./11.jpg"; // 导入树图片
+import tree22 from "./22.jpg"; // 导入树图片
+import tree33 from "./33.jpg"; // 导入树图片
+import tree44 from "./44.jpg"; // 导入树图片
 
 const ChatScreen = () => {
   // 随机选择初始场景
@@ -95,10 +98,12 @@ const ChatScreen = () => {
       .map(([category]) => category);
 
     let summaryTitle, summaryContent, tips;
+    // 根据平均暴力沟通指数决定树图片
+    let treeImage = null;
 
     // 根据平均暴力沟通指数生成不同的综合评估
     if (averageViolenceIndex <= 20) {
-      // 非暴力沟通模式
+      // 非暴力沟通模式 - 不放图片
       summaryTitle = "您的沟通表现出色！";
       summaryContent = `在整个对话中，您采用了尊重、理解和支持的沟通方式。您的沟通暴力指数为${Math.round(
         averageViolenceIndex
@@ -111,7 +116,8 @@ const ChatScreen = () => {
         "继续保持'先确认需求再表达担忧'的模式（如：你希望有更多社交对吗？妈妈也很支持，我们可以一起想想怎么既安全又有趣）",
       ];
     } else if (averageViolenceIndex <= 40) {
-      // 较好的沟通模式
+      // 较好的沟通模式 - 放tree22
+      treeImage = tree22;
       summaryTitle = "您的沟通整体良好";
       summaryContent = `您表现出强烈的保护意识（沟通指数${Math.round(
         averageViolenceIndex
@@ -124,7 +130,8 @@ const ChatScreen = () => {
         "把'不许去'换成'我们可以一起制定安全计划吗？'",
       ];
     } else if (averageViolenceIndex <= 60) {
-      // 混合沟通模式
+      // 混合沟通模式 - 放tree33
+      treeImage = tree33;
       summaryTitle = "您的沟通方式需要调整";
       summaryContent = `您正处在爱与规则的平衡探索中（指数${Math.round(
         averageViolenceIndex
@@ -137,7 +144,8 @@ const ChatScreen = () => {
         "试着每天发现孩子一个值得肯定的细节（如：你今天主动收拾书包，说明你越来越有责任感了）",
       ];
     } else if (averageViolenceIndex <= 80) {
-      // 较为消极的沟通模式
+      // 较为消极的沟通模式 - 放tree44
+      treeImage = tree44;
       summaryTitle = "您的沟通方式需要重大改变";
       summaryContent = `我们感受到您深重的育儿焦虑（指数${Math.round(
         averageViolenceIndex
@@ -150,7 +158,8 @@ const ChatScreen = () => {
         "每天给孩子一个拥抱，什么话都不说，持续观察孩子的变化",
       ];
     } else {
-      // 高度消极的沟通模式
+      // 高度消极的沟通模式 - 放tree44
+      treeImage = tree44;
       summaryTitle = "您的沟通方式亟需重大调整";
       summaryContent = `您正承受着巨大的养育压力（指数${Math.round(
         averageViolenceIndex
@@ -200,6 +209,7 @@ const ChatScreen = () => {
       title: summaryTitle,
       content: summaryContent,
       tips: tips,
+      treeImage: treeImage, // 返回对应的树图片
     };
   };
 
@@ -218,7 +228,7 @@ const ChatScreen = () => {
     addMessage({
       type: "system",
       content: `<div style="text-align: center;">
-        <img src="${treeImage}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
+        <img src="${tree11}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
         <p>这棵树代表着孩子的心理健康状态。沟通方式会直接影响孩子的情绪和成长。</p>
       </div>`,
     });
@@ -299,12 +309,27 @@ const ChatScreen = () => {
 
         // 添加最终沟通小结消息
         setTimeout(() => {
-          addMessage({
-            type: "system",
-            content: `【沟通评估】\n\n${finalSummary.title}\n\n${
-              finalSummary.content
-            }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`,
-          });
+          // 根据是否有树图片构建不同的内容
+          let summaryContent = `【沟通评估】\n\n${finalSummary.title}\n\n${
+            finalSummary.content
+          }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`;
+
+          // 如果有树图片，添加图片HTML
+          if (finalSummary.treeImage) {
+            addMessage({
+              type: "system",
+              content: `<div style="text-align: center;">
+                <img src="${finalSummary.treeImage}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
+                <p>这是孩子当前的心理状态。</p>
+              </div>
+              ${summaryContent}`,
+            });
+          } else {
+            addMessage({
+              type: "system",
+              content: summaryContent,
+            });
+          }
 
           setTimeout(() => {
             // 添加沟通心法文段
@@ -455,12 +480,27 @@ const ChatScreen = () => {
 
         // 添加最终沟通小结消息
         setTimeout(() => {
-          addMessage({
-            type: "system",
-            content: `【沟通评估】\n\n${finalSummary.title}\n\n${
-              finalSummary.content
-            }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`,
-          });
+          // 根据是否有树图片构建不同的内容
+          let summaryContent = `【沟通评估】\n\n${finalSummary.title}\n\n${
+            finalSummary.content
+          }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`;
+
+          // 如果有树图片，添加图片HTML
+          if (finalSummary.treeImage) {
+            addMessage({
+              type: "system",
+              content: `<div style="text-align: center;">
+                <img src="${finalSummary.treeImage}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
+                <p>这是孩子当前的心理状态。</p>
+              </div>
+              ${summaryContent}`,
+            });
+          } else {
+            addMessage({
+              type: "system",
+              content: summaryContent,
+            });
+          }
 
           setTimeout(() => {
             // 添加沟通心法文段
@@ -521,15 +561,30 @@ const ChatScreen = () => {
       const finalSummary = generateFinalSummary();
 
       // 添加最终沟通小结消息
-      addMessage({
-        type: "system",
-        content: `【沟通评估】\n\n${finalSummary.title}\n\n${
-          finalSummary.content
-        }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`,
-      });
+      // 根据是否有树图片构建不同的内容
+      let summaryContent = `【沟通评估】\n\n${finalSummary.title}\n\n${
+        finalSummary.content
+      }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`;
 
-      // 添加沟通心法文段
+      // 如果有树图片，添加图片HTML
+      if (finalSummary.treeImage) {
+        addMessage({
+          type: "system",
+          content: `<div style="text-align: center;">
+            <img src="${finalSummary.treeImage}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
+            <p>这是孩子当前的心理状态。</p>
+          </div>
+          ${summaryContent}`,
+        });
+      } else {
+        addMessage({
+          type: "system",
+          content: summaryContent,
+        });
+      }
+
       setTimeout(() => {
+        // 添加沟通心法文段
         addMessage({
           type: "system",
           content: `亲爱的家长：
