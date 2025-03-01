@@ -164,13 +164,18 @@ body {
 }
 
 .message-system {
-  background-color: #f0f0f0;
+  background-color: #f0f7f0;
   align-self: center;
   border-radius: 12px;
   max-width: 90%;
-  text-align: center;
+  text-align: left;
   font-size: 14px;
   color: var(--text-secondary);
+  padding: 14px;
+  margin: 16px 0;
+  border-left: 3px solid var(--primary-color);
+  white-space: pre-line;
+  line-height: 1.5;
 }
 
 .message-inner-thought {
