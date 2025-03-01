@@ -14,6 +14,12 @@ const Message = ({ type, content, innerThought }) => {
     }
   };
 
+  // 判断内容是否包含HTML
+  const isHTML =
+    content.includes("<div") ||
+    content.includes("<img") ||
+    content.includes("<p");
+
   return (
     <div
       style={{
@@ -28,7 +34,14 @@ const Message = ({ type, content, innerThought }) => {
         marginBottom: "16px",
       }}
     >
-      <div className={getMessageClass()}>{content}</div>
+      {isHTML ? (
+        <div
+          className={getMessageClass()}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      ) : (
+        <div className={getMessageClass()}>{content}</div>
+      )}
     </div>
   );
 };

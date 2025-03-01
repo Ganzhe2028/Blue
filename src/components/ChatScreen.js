@@ -4,9 +4,12 @@ import Message from "./Message";
 import StageSummary from "./StageSummary";
 import { scenarios } from "../utils/scenarios";
 import { analyzeResponse } from "../utils/analyzer";
+import treeImage from "./11.jpg"; // 导入树图片
 
 const ChatScreen = () => {
-  const [currentScenario, setCurrentScenario] = useState(0);
+  // 随机选择初始场景
+  const randomInitialScenario = Math.floor(Math.random() * 2);
+  const [currentScenario, setCurrentScenario] = useState(randomInitialScenario);
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [treeHealth, setTreeHealth] = useState(100); // 保留状态但不再显示Tree
@@ -19,6 +22,13 @@ const ChatScreen = () => {
   const [userResponses, setUserResponses] = useState([]); // 跟踪用户的所有回复
 
   const messagesEndRef = useRef(null);
+
+  // 重新开始一个随机场景的函数
+  const startRandomScenario = () => {
+    const randomScenarioIndex = Math.floor(Math.random() * 2); // 随机选择0或1
+    setCurrentScenario(randomScenarioIndex);
+    startScenario(randomScenarioIndex);
+  };
 
   // 初始化场景
   useEffect(() => {
@@ -102,6 +112,7 @@ const ChatScreen = () => {
       ];
     } else if (averageViolenceIndex <= 40) {
       // 较好的沟通模式
+      summaryTitle = "您的沟通整体良好";
       summaryContent = `您表现出强烈的保护意识（沟通指数${Math.round(
         averageViolenceIndex
       )}），这源于对孩子安全的深切关怀。我们注意到您最常使用"${sortedCategories.join(
@@ -114,6 +125,7 @@ const ChatScreen = () => {
       ];
     } else if (averageViolenceIndex <= 60) {
       // 混合沟通模式
+      summaryTitle = "您的沟通方式需要调整";
       summaryContent = `您正处在爱与规则的平衡探索中（指数${Math.round(
         averageViolenceIndex
       )}）。我们理解您使用"${sortedCategories.join(
@@ -126,6 +138,7 @@ const ChatScreen = () => {
       ];
     } else if (averageViolenceIndex <= 80) {
       // 较为消极的沟通模式
+      summaryTitle = "您的沟通方式需要重大改变";
       summaryContent = `我们感受到您深重的育儿焦虑（指数${Math.round(
         averageViolenceIndex
       )}）。您常用的"${sortedCategories.join(
@@ -138,6 +151,7 @@ const ChatScreen = () => {
       ];
     } else {
       // 高度消极的沟通模式
+      summaryTitle = "您的沟通方式亟需重大调整";
       summaryContent = `您正承受着巨大的养育压力（指数${Math.round(
         averageViolenceIndex
       )}）。那些"${sortedCategories.join(
@@ -200,27 +214,38 @@ const ChatScreen = () => {
     setStage(0);
     setUserResponses([]);
 
-    // 添加场景介绍
+    // 添加树的图片和状态说明
     addMessage({
       type: "system",
-      content: scenario.introduction,
+      content: `<div style="text-align: center;">
+        <img src="${treeImage}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
+        <p>这棵树代表着孩子的心理健康状态。沟通方式会直接影响孩子的情绪和成长。</p>
+      </div>`,
     });
 
-    // 添加第一条孩子的消息
+    // 添加场景介绍
     setTimeout(() => {
       addMessage({
-        type: "child",
-        content: scenario.stages[0].childMessage,
+        type: "system",
+        content: scenario.introduction,
       });
 
-      setWaitingForUserInput(true);
+      // 添加第一条孩子的消息
+      setTimeout(() => {
+        addMessage({
+          type: "child",
+          content: scenario.stages[0].childMessage,
+        });
 
-      // 如果有快速回复选项，显示它们
-      if (scenario.stages[0].quickReplies) {
-        setQuickReplies(scenario.stages[0].quickReplies);
-      } else {
-        setQuickReplies([]);
-      }
+        setWaitingForUserInput(true);
+
+        // 如果有快速回复选项，显示它们
+        if (scenario.stages[0].quickReplies) {
+          setQuickReplies(scenario.stages[0].quickReplies);
+        } else {
+          setQuickReplies([]);
+        }
+      }, 1000);
     }, 1000);
   };
 
@@ -314,8 +339,22 @@ const ChatScreen = () => {
             setTimeout(() => {
               addMessage({
                 type: "system",
-                content: "场景结束。感谢您的参与！",
+                content:
+                  "场景结束。本项目完全没有改变您、甚至教育您的想法的意图。我们只想通过这个项目让您意识到：把隐藏在心里没说出口的那些话说出来，就能改善很多，仅此而已。感谢您的参与！",
               });
+
+              // 添加一个按钮允许用户开始新场景
+              setTimeout(() => {
+                addMessage({
+                  type: "system",
+                  content: "想要尝试另一个场景吗？",
+                });
+                setQuickReplies([
+                  { text: "是的，再来一次" },
+                  { text: "不了，谢谢" },
+                ]);
+                setWaitingForUserInput(true);
+              }, 1000);
             }, 1500);
           }, 1500);
         }, 1000);
@@ -355,6 +394,24 @@ const ChatScreen = () => {
   const handleQuickReplyClick = (reply) => {
     // 直接使用选项的文本作为用户回复，不设置输入框
     const replyText = reply.text;
+
+    // 检查是否是场景结束后的重新开始选项
+    if (replyText === "是的，再来一次") {
+      // 清空消息
+      setMessages([]);
+      // 开始一个新的随机场景
+      startRandomScenario();
+      return;
+    } else if (replyText === "不了，谢谢") {
+      // 添加最终结束消息
+      addMessage({
+        type: "system",
+        content: "感谢您的参与！希望这个体验对您有所帮助。",
+      });
+      setWaitingForUserInput(false);
+      setQuickReplies([]);
+      return;
+    }
 
     // 添加用户（父母）的消息
     addMessage({
@@ -438,7 +495,8 @@ const ChatScreen = () => {
             setTimeout(() => {
               addMessage({
                 type: "system",
-                content: "场景结束。感谢您的参与！",
+                content:
+                  "场景结束。本项目完全没有改变您、甚至教育您的想法的意图。我们只想通过这个项目让您意识到：把隐藏在心里没说出口的那些话说出来，就能改善很多，仅此而已。感谢您的参与！",
               });
             }, 1500);
           }, 1500);
@@ -504,7 +562,8 @@ const ChatScreen = () => {
         setTimeout(() => {
           addMessage({
             type: "system",
-            content: "场景结束。感谢您的参与！",
+            content:
+              "场景结束。本项目完全没有改变您、甚至教育您的想法的意图。我们只想通过这个项目让您意识到：把隐藏在心里没说出口的那些话说出来，就能改善很多，仅此而已。感谢您的参与！",
           });
         }, 1500);
       }, 1000);
@@ -534,9 +593,6 @@ const ChatScreen = () => {
                   >
                     {reply.text}
                   </div>
-                  {reply.hint && (
-                    <div className="quick-reply-hint">{reply.hint}</div>
-                  )}
                 </div>
               ))}
             </div>
