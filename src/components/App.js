@@ -4,8 +4,12 @@ import ChatScreen from "./ChatScreen";
 
 const App = () => {
   const [currentScreen, setCurrentScreen] = useState("welcome");
+  const [customScenario, setCustomScenario] = useState("");
+  const [userIdentity, setUserIdentity] = useState("我是孩子");
 
-  const startExperience = () => {
+  const startExperience = (scenarioText, identity) => {
+    setCustomScenario(scenarioText);
+    setUserIdentity(identity);
     setCurrentScreen("chat");
   };
 
@@ -15,7 +19,12 @@ const App = () => {
         <WelcomeScreen onStart={startExperience} />
       )}
 
-      {currentScreen === "chat" && <ChatScreen />}
+      {currentScreen === "chat" && (
+        <ChatScreen
+          customScenario={customScenario}
+          userIdentity={userIdentity}
+        />
+      )}
     </div>
   );
 };

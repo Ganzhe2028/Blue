@@ -9,28 +9,35 @@ import tree22 from "./22.jpg"; // 导入树图片
 import tree33 from "./33.jpg"; // 导入树图片
 import tree44 from "./44.jpg"; // 导入树图片
 
-const ChatScreen = () => {
-  // 随机选择初始场景
-  const randomInitialScenario = Math.floor(Math.random() * 2);
-  const [currentScenario, setCurrentScenario] = useState(randomInitialScenario);
+const ChatScreen = ({ customScenario, userIdentity }) => {
+  // 将初始场景固定为学习成绩下降场景（索引0）
+  const [currentScenario, setCurrentScenario] = useState(0);
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [treeHealth, setTreeHealth] = useState(100); // 保留状态但不再显示Tree
   const [showSummary, setShowSummary] = useState(false);
   const [summaryData, setSummaryData] = useState(null);
-  const [quickReplies, setQuickReplies] = useState([]);
   const [emotionLevel, setEmotionLevel] = useState(50); // 0-100, 50 is neutral
   const [stage, setStage] = useState(0);
   const [waitingForUserInput, setWaitingForUserInput] = useState(false);
   const [userResponses, setUserResponses] = useState([]); // 跟踪用户的所有回复
+  const [isParent, setIsParent] = useState(userIdentity === "我是家长");
+
+  // 添加固定回复集
+  const standardResponses = [
+    "我理解你的感受，让我们一起想想办法。",
+    "我看到你很努力了，我能帮你什么吗？",
+    "这确实需要我们共同面对，谢谢你的分享。",
+    "我会一直支持你，无论发生什么。",
+    "我们相信你能做到更好，让我们一起努力。",
+  ];
 
   const messagesEndRef = useRef(null);
 
-  // 重新开始一个随机场景的函数
+  // 重新开始一个随机场景的函数 - 固定为场景0
   const startRandomScenario = () => {
-    const randomScenarioIndex = Math.floor(Math.random() * 2); // 随机选择0或1
-    setCurrentScenario(randomScenarioIndex);
-    startScenario(randomScenarioIndex);
+    setCurrentScenario(0);
+    startScenario(0);
   };
 
   // 初始化场景
@@ -104,6 +111,7 @@ const ChatScreen = () => {
     // 根据平均暴力沟通指数生成不同的综合评估
     if (averageViolenceIndex <= 20) {
       // 非暴力沟通模式 - 不放图片
+      treeImage = tree55;
       summaryTitle = "您的沟通表现出色！";
       summaryContent = `在整个对话中，您采用了尊重、理解和支持的沟通方式。您的沟通暴力指数为${Math.round(
         averageViolenceIndex
@@ -117,7 +125,7 @@ const ChatScreen = () => {
       ];
     } else if (averageViolenceIndex <= 40) {
       // 较好的沟通模式 - 放tree22
-      treeImage = tree22;
+      treeImage = tree44;
       summaryTitle = "您的沟通整体良好";
       summaryContent = `您表现出强烈的保护意识（沟通指数${Math.round(
         averageViolenceIndex
@@ -145,7 +153,7 @@ const ChatScreen = () => {
       ];
     } else if (averageViolenceIndex <= 80) {
       // 较为消极的沟通模式 - 放tree44
-      treeImage = tree44;
+      treeImage = tree11;
       summaryTitle = "您的沟通方式需要重大改变";
       summaryContent = `我们感受到您深重的育儿焦虑（指数${Math.round(
         averageViolenceIndex
@@ -159,7 +167,7 @@ const ChatScreen = () => {
       ];
     } else {
       // 高度消极的沟通模式 - 放tree44
-      treeImage = tree44;
+      treeImage = tree11;
       summaryTitle = "您的沟通方式亟需重大调整";
       summaryContent = `您正承受着巨大的养育压力（指数${Math.round(
         averageViolenceIndex
@@ -213,22 +221,34 @@ const ChatScreen = () => {
     };
   };
 
+  // 开始一个场景
   const startScenario = (scenarioIndex) => {
-    const scenario = scenarios[scenarioIndex];
-
-    // 重置状态
     setMessages([]);
+    setStage(0);
     setTreeHealth(100);
+    setEmotionLevel(50);
+    setUserResponses([]);
     setShowSummary(false);
     setSummaryData(null);
-    setStage(0);
-    setUserResponses([]);
+
+    const scenarioIntro =
+      customScenario && customScenario.trim()
+        ? customScenario
+        : scenarios[scenarioIndex].introduction;
+
+    // 添加身份标识
+    addMessage({
+      type: "system",
+      content: `<div style="text-align: center; margin-bottom: 10px;">
+        <p>您当前的身份是: <strong>${userIdentity}</strong></p>
+      </div>`,
+    });
 
     // 添加树的图片和状态说明
     addMessage({
       type: "system",
       content: `<div style="text-align: center;">
-        <img src="${tree11}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
+        <img src="${tree22}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
         <p>这棵树代表着孩子的心理健康状态。沟通方式会直接影响孩子的情绪和成长。</p>
       </div>`,
     });
@@ -237,24 +257,16 @@ const ChatScreen = () => {
     setTimeout(() => {
       addMessage({
         type: "system",
-        content: scenario.introduction,
+        content: `【场景介绍】${scenarioIntro}`,
       });
 
-      // 添加第一条孩子的消息
+      // 添加孩子的第一条消息
       setTimeout(() => {
         addMessage({
           type: "child",
-          content: scenario.stages[0].childMessage,
+          content: scenarios[scenarioIndex].stages[0].childMessage,
         });
-
         setWaitingForUserInput(true);
-
-        // 如果有快速回复选项，显示它们
-        if (scenario.stages[0].quickReplies) {
-          setQuickReplies(scenario.stages[0].quickReplies);
-        } else {
-          setQuickReplies([]);
-        }
       }, 1000);
     }, 1000);
   };
@@ -274,13 +286,15 @@ const ChatScreen = () => {
 
     setUserInput("");
     setWaitingForUserInput(false);
-    setQuickReplies([]);
 
-    // 分析用户的回复
+    // 分析用户的回复 - 使用固定的标准回复
     const currentStageData = scenarios[currentScenario].stages[stage];
-    const analysis = analyzeResponse(userInput, currentStageData);
+    // 使用标准回复进行分析，而不是实际用户输入
+    const standardResponse =
+      standardResponses[stage % standardResponses.length];
+    const analysis = analyzeResponse(standardResponse, currentStageData);
 
-    // 记录用户的回复及其分析结果
+    // 记录用户的回复及其分析结果 - 使用固定的分析结果
     setUserResponses((prev) => [...prev, analysis]);
 
     // 更新树的健康状态
@@ -297,13 +311,114 @@ const ChatScreen = () => {
 
     // 显示孩子的反应
     setTimeout(() => {
-      addMessage({
-        type: "child",
-        content: analysis.childResponse,
-      });
-
-      // 检查是否到达最后阶段
+      // 在最后一轮，使用场景定义的孩子消息，而不是由analyzeResponse生成的回复
       if (stage >= scenarios[currentScenario].stages.length - 1) {
+        // 使用场景中定义的最后一条孩子消息
+        addMessage({
+          type: "child",
+          content: scenarios[currentScenario].stages[stage].childMessage,
+        });
+      } else if (stage === scenarios[currentScenario].stages.length - 2) {
+        // 倒数第二轮时显示固定的回复
+        addMessage({
+          type: "child",
+          content: "嗯，我明白你的担心。",
+        });
+
+        // 短暂延迟后自动显示最后一句话，无需用户输入
+        setTimeout(() => {
+          // 显示最后一轮孩子的台词
+          addMessage({
+            type: "child",
+            content: scenarios[currentScenario].stages[stage + 1].childMessage,
+          });
+
+          // 直接进入总结阶段
+          setTimeout(() => {
+            // 到达最后阶段时，生成综合反馈
+            const finalSummary = generateFinalSummary();
+
+            // 添加最终沟通小结消息
+            setTimeout(() => {
+              // 根据是否有树图片构建不同的内容
+              let summaryContent = `【沟通评估】\n\n${finalSummary.title}\n\n${
+                finalSummary.content
+              }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`;
+
+              // 如果有树图片，添加图片HTML
+              if (finalSummary.treeImage) {
+                addMessage({
+                  type: "system",
+                  content: `<div style="text-align: center;">
+                    <img src="${finalSummary.treeImage}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
+                    <p>这是孩子当前的心理状态。</p>
+                  </div>
+                  ${summaryContent}`,
+                });
+              } else {
+                addMessage({
+                  type: "system",
+                  content: summaryContent,
+                });
+              }
+
+              setTimeout(() => {
+                // 添加沟通心法文段
+                addMessage({
+                  type: "system",
+                  content: `亲爱的家长：
+
+您是否发现这样的对话困境？  
+当孩子说"我想晚上出去玩"，您立即说"不可以"时  
+您心里翻涌的其实是："现在治安不好，上周新闻刚有事故...要是出事我这当父母的怎么担得起..."  
+但孩子听到的只是冰冷的拒绝，他脑中的声音是："爸妈根本不信任我，在他们眼里我永远长不大"  
+
+这不是沟通，这是两颗心在黑暗中的隔空喊话。  
+
+试着像使用ChatGPT那样与孩子对话——当AI答非所问时，您会补充背景："我需要一封求职信，对方是互联网公司，我有3年运营经验..."  
+对孩子也该如此：  
+"妈妈很矛盾，既想支持你独立（需求），又担心夜间安全（顾虑）。你能说说想出去玩的具体计划吗？我们找找两全其美的方案（共同解决）"  
+
+魔法公式 = 袒露脆弱 + 展示思考过程  
+- 当您要拒绝时，先说："爸爸刚才心跳都加快了，因为..."  
+- 当您不赞同时，先坦白："妈妈小时候被过度保护，现在可能矫枉过正了..."  
+- 当您担忧时，展示纠结："批不批准这个聚会让我失眠了，既怕你错过社交，又担心..."  
+
+这样的对话不是示弱，而是在孩子心里播撒三颗种子：  
+1️⃣ 信任的种子："原来我的每个请求，爸妈都认真考虑过"  
+2️⃣ 共情的种子："爸妈的反对背后藏着爱，不是专制"  
+3️⃣ 智慧的种子："解决问题要考虑多方因素，不能非黑即白"  
+
+就像孩子学步时会摔跤，我们学习新型沟通时也可能退回旧模式。但请记住：当您开始说"我为什么这么说"，孩子就开始听懂"爱为什么这样表达"。`,
+                });
+
+                setTimeout(() => {
+                  addMessage({
+                    type: "system",
+                    content:
+                      "场景结束。本项目完全没有改变您、甚至教育您的想法的意图。我们只想通过这个项目让您意识到：把隐藏在心里没说出口的那些话说出来，就能改善很多，仅此而已。感谢您的参与！",
+                  });
+                }, 1500);
+              }, 1500);
+            }, 1000);
+          }, 1000);
+        }, 2000);
+
+        // 更新阶段到最后一个阶段，这样系统知道对话已结束
+        setStage(scenarios[currentScenario].stages.length - 1);
+      } else {
+        // 使用分析生成的回复
+        addMessage({
+          type: "child",
+          content: analysis.childResponse,
+        });
+      }
+
+      // 检查是否到达最后阶段，且不是从倒数第二轮自动跳转来的
+      if (
+        stage >= scenarios[currentScenario].stages.length - 1 &&
+        !(stage === scenarios[currentScenario].stages.length - 2)
+      ) {
         // 到达最后阶段时，生成综合反馈
         const finalSummary = generateFinalSummary();
 
@@ -368,22 +483,12 @@ const ChatScreen = () => {
                   "场景结束。本项目完全没有改变您、甚至教育您的想法的意图。我们只想通过这个项目让您意识到：把隐藏在心里没说出口的那些话说出来，就能改善很多，仅此而已。感谢您的参与！",
               });
 
-              // 添加一个按钮允许用户开始新场景
-              setTimeout(() => {
-                addMessage({
-                  type: "system",
-                  content: "想要尝试另一个场景吗？",
-                });
-                setQuickReplies([
-                  { text: "是的，再来一次" },
-                  { text: "不了，谢谢" },
-                ]);
-                setWaitingForUserInput(true);
-              }, 1000);
+              // 不再添加结束提示
+              setWaitingForUserInput(true);
             }, 1500);
           }, 1500);
         }, 1000);
-      } else {
+      } else if (!(stage === scenarios[currentScenario].stages.length - 2)) {
         // 继续下一个阶段，不显示中间小结
         setTimeout(() => {
           proceedToNextStage();
@@ -406,148 +511,7 @@ const ChatScreen = () => {
       });
 
       setWaitingForUserInput(true);
-
-      // 如果有快速回复选项，显示它们
-      if (nextStageData.quickReplies) {
-        setQuickReplies(nextStageData.quickReplies);
-      } else {
-        setQuickReplies([]);
-      }
     }
-  };
-
-  const handleQuickReplyClick = (reply) => {
-    // 直接使用选项的文本作为用户回复，不设置输入框
-    const replyText = reply.text;
-
-    // 检查是否是场景结束后的重新开始选项
-    if (replyText === "是的，再来一次") {
-      // 清空消息
-      setMessages([]);
-      // 开始一个新的随机场景
-      startRandomScenario();
-      return;
-    } else if (replyText === "不了，谢谢") {
-      // 添加最终结束消息
-      addMessage({
-        type: "system",
-        content: "感谢您的参与！希望这个体验对您有所帮助。",
-      });
-      setWaitingForUserInput(false);
-      setQuickReplies([]);
-      return;
-    }
-
-    // 添加用户（父母）的消息
-    addMessage({
-      type: "parent",
-      content: replyText,
-    });
-
-    setWaitingForUserInput(false);
-    setQuickReplies([]);
-
-    // 分析用户的回复
-    const currentStageData = scenarios[currentScenario].stages[stage];
-    const analysis = analyzeResponse(replyText, currentStageData);
-
-    // 记录用户的回复及其分析结果
-    setUserResponses((prev) => [...prev, analysis]);
-
-    // 更新树的健康状态
-    const newHealth = Math.max(
-      0,
-      Math.min(100, treeHealth + analysis.healthImpact)
-    );
-    setTreeHealth(newHealth);
-
-    // 更新情绪水平
-    setEmotionLevel(
-      Math.max(0, Math.min(100, emotionLevel + analysis.emotionImpact))
-    );
-
-    // 显示孩子的反应
-    setTimeout(() => {
-      addMessage({
-        type: "child",
-        content: analysis.childResponse,
-      });
-
-      // 检查是否到达最后阶段
-      if (stage >= scenarios[currentScenario].stages.length - 1) {
-        // 到达最后阶段时，生成综合反馈
-        const finalSummary = generateFinalSummary();
-
-        // 添加最终沟通小结消息
-        setTimeout(() => {
-          // 根据是否有树图片构建不同的内容
-          let summaryContent = `【沟通评估】\n\n${finalSummary.title}\n\n${
-            finalSummary.content
-          }\n\n【改进建议】\n· ${finalSummary.tips.join("\n· ")}`;
-
-          // 如果有树图片，添加图片HTML
-          if (finalSummary.treeImage) {
-            addMessage({
-              type: "system",
-              content: `<div style="text-align: center;">
-                <img src="${finalSummary.treeImage}" alt="情绪树" style="width: 200px; margin: 10px auto;" />
-                <p>这是孩子当前的心理状态。</p>
-              </div>
-              ${summaryContent}`,
-            });
-          } else {
-            addMessage({
-              type: "system",
-              content: summaryContent,
-            });
-          }
-
-          setTimeout(() => {
-            // 添加沟通心法文段
-            addMessage({
-              type: "system",
-              content: `亲爱的家长：
-
-您是否发现这样的对话困境？  
-当孩子说"我想晚上出去玩"，您立即说"不可以"时  
-您心里翻涌的其实是："现在治安不好，上周新闻刚有事故...要是出事我这当父母的怎么担得起..."  
-但孩子听到的只是冰冷的拒绝，他脑中的声音是："爸妈根本不信任我，在他们眼里我永远长不大"  
-
-这不是沟通，这是两颗心在黑暗中的隔空喊话。  
-
-试着像使用ChatGPT那样与孩子对话——当AI答非所问时，您会补充背景："我需要一封求职信，对方是互联网公司，我有3年运营经验..."  
-对孩子也该如此：  
-"妈妈很矛盾，既想支持你独立（需求），又担心夜间安全（顾虑）。你能说说想出去玩的具体计划吗？我们找找两全其美的方案（共同解决）"  
-
-魔法公式 = 袒露脆弱 + 展示思考过程  
-- 当您要拒绝时，先说："爸爸刚才心跳都加快了，因为..."  
-- 当您不赞同时，先坦白："妈妈小时候被过度保护，现在可能矫枉过正了..."  
-- 当您担忧时，展示纠结："批不批准这个聚会让我失眠了，既怕你错过社交，又担心..."  
-
-这样的对话不是示弱，而是在孩子心里播撒三颗种子：  
-1️⃣ 信任的种子："原来我的每个请求，爸妈都认真考虑过"  
-2️⃣ 共情的种子："爸妈的反对背后藏着爱，不是专制"  
-3️⃣ 智慧的种子："解决问题要考虑多方因素，不能非黑即白"  
-
-就像孩子学步时会摔跤，我们学习新型沟通时也可能退回旧模式。但请记住：当您开始说"我为什么这么说"，孩子就开始听懂"爱为什么这样表达"。`,
-            });
-
-            setTimeout(() => {
-              addMessage({
-                type: "system",
-                content:
-                  "场景结束。本项目完全没有改变您、甚至教育您的想法的意图。我们只想通过这个项目让您意识到：把隐藏在心里没说出口的那些话说出来，就能改善很多，仅此而已。感谢您的参与！",
-              });
-            }, 1500);
-          }, 1500);
-        }, 1000);
-      } else {
-        // 继续下一个阶段，不显示中间小结
-        setTimeout(() => {
-          proceedToNextStage();
-        }, 1500);
-      }
-    }, 1000);
   };
 
   const handleSummaryClose = () => {
@@ -636,22 +600,6 @@ const ChatScreen = () => {
             <Message key={index} type={msg.type} content={msg.content} />
           ))}
           <div ref={messagesEndRef} />
-
-          {/* 快速回复选项 */}
-          {waitingForUserInput && quickReplies.length > 0 && (
-            <div className="quick-replies">
-              {quickReplies.map((reply, index) => (
-                <div key={index}>
-                  <div
-                    className="quick-reply-option"
-                    onClick={() => handleQuickReplyClick(reply)}
-                  >
-                    {reply.text}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* 输入区域 */}
